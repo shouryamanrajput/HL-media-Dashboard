@@ -1,0 +1,296 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  passwordHash  String?   // optional — Google-only users & approved-but-not-yet-set-up users have no password
+  employeeCode  String?   @unique
+  entity        String?
+  grade         String?
+  department    String?
+  role          String    @default("INVESTIGATOR") // ADMIN | INVESTIGATOR | REVIEWER_L1 | REVIEWER_L2
+  roles         String    @default("") // comma-separated: "ADMIN,REVIEWER_L1"
+  scopeEntity   String?
+  scopeDept     String?
+  active        Boolean   @default(true)
+  mustSetup     Boolean   @default(false) // true after approval → forces first-login profile+password setup
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  createdById   String?
+  createdBy     User?     @relation("UserCreatedBy", fields: [createdById], references: [id])
+  createdUsers  User[]    @relation("UserCreatedBy")
+  reviewedRequests UserRequest[] @relation("RequestReviewer")
+  assignedCases Case[]    @relation("assignee")
+  createdCases  Case[]    @relation("creator")
+  l1ReviewCases Case[]    @relation("l1Reviewer")
+  l2ReviewCases Case[]    @relation("l2Reviewer")
+  attachments   CaseAttachment[]
+  auditLogs     AuditLog[]
+  employeeUploads EmployeeUploadLog[]
+  passwordResetRequests    PasswordResetRequest[] @relation("passwordResetRequests")
+  passwordResetResolutions PasswordResetRequest[] @relation("passwordResetResolutions")
+}
+
+model PasswordResetRequest {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation("passwordResetRequests", fields: [userId], references: [id], onDelete: Cascade)
+  status       String    @default("PENDING") // PENDING | RESOLVED | DISMISSED
+  requestedAt  DateTime  @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+  resolvedBy   User?     @relation("passwordResetResolutions", fields: [resolvedById], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Case {
+  id                    String   @id @default(cuid())
+  caseNo                Int      @unique
+
+  // Intake (cols A-AA)
+  escalationChannel     String
+  complaintDate         DateTime
+  escalationDate        DateTime?
+  assignDate            DateTime?
+  month                 String
+  severity              String   // LOW | MEDIUM | HIGH | CRITICAL
+  assigneeId            String?
+  subjectLine           String
+  complainantType       String?
+  complainantName       String?
+  complainantECode      String?
+  complainantEntity     String?
+  complainantGrade      String?
+  complainantMobile     String?
+  complainantEmail      String?
+  respondentName        String
+  respondentECode       String?
+  respondentEntity      String
+  respondentGrade       String?
+  respondents           String?  // JSON array for multiple respondents [{name,eCode,entity,grade,dept,city,state,hrbpSpoc,hodName,hodEntity}]
+  city                  String?
+  state                 String?
+  hrbpSpoc              String?
+  hodName               String?
+  hodEntity             String?
+  respondentDept        String?
+  saleNonSale           String?
+  categoryId            String
+  subCategoryId         String
+
+  // Investigation lifecycle (AB+)
+  reportLink            String?
+  investigationStatus   String   @default("INVESTIGATION_NOT_STARTED") // INVESTIGATION_NOT_STARTED | INCOMPLETE_DETAILS | INVESTIGATION_IN_PROGRESS | DRAFT_REVIEW | CLOSED_WITH_MHD | CLOSED_WITH_HR_SPOC | PENDING_L1_REVIEW | PENDING_L2_REVIEW | CLOSED
+  investigationStartedAt DateTime?   // auto-captured when investigation starts
+  investigationReport   String?  // JSON blob for structured report
+
+  // Review workflow
+  l1ReviewerId          String?
+  l2ReviewerId          String?
+  investigatorSubmittedAt DateTime?
+  l1ReviewStartedAt     DateTime?
+  l1ReviewedAt          DateTime?
+  l1ReviewStatus        String?      // REVIEW_NOT_STARTED | REVIEW_IN_PROGRESS | CORRECTIONS_REQUIRED | CORRECTIONS_COMPLETED | COMPLETED
+  l1Comments            String?
+  l2ReviewStartedAt     DateTime?
+  l2ReviewedAt          DateTime?
+  l2ReviewStatus        String?      // REVIEW_NOT_STARTED | REVIEW_IN_PROGRESS | CORRECTIONS_REQUIRED | CORRECTIONS_COMPLETED | COMPLETED
+  l2Comments            String?
+  remarks1              String?
+  substantiated         String?  // SUBSTANTIATED | UNSUBSTANTIATED | PARTIALLY_SUBSTANTIATED | NA
+  reportStatus          String?  // NA - Unsubstantiated | Report ready for DC | Report sent to DC | Report sent to CBO | Report sent to CHRO | NA
+  closureDate           DateTime?
+  processRecApproved    String?  // YES | NO | NA
+  employeeRecApproved   String?  // YES | NO | NA
+  recommendationApprovalDate DateTime?
+  employeeActionCount   Int      @default(0)
+  employeeAction        String?
+  employeeActionStatus  String?
+  employeeActionDate    DateTime?
+  processAction         String?
+  processActionStatus   String?
+  processActionDate     DateTime?
+
+  // Computed
+  tatDays               Int?
+  caseAge               Int?
+  tatBreach             Boolean  @default(false)
+  breachReason          String?
+  remarks2              String?
+
+  // Custom extension
+  extraFields           String?  // JSON blob
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  createdById           String
+
+  assignee              User?    @relation("assignee", fields: [assigneeId], references: [id])
+  creator               User     @relation("creator", fields: [createdById], references: [id])
+  l1Reviewer            User?    @relation("l1Reviewer", fields: [l1ReviewerId], references: [id])
+  l2Reviewer            User?    @relation("l2Reviewer", fields: [l2ReviewerId], references: [id])
+  category              LookupCategory     @relation(fields: [categoryId], references: [id])
+  subCategory           LookupSubCategory  @relation(fields: [subCategoryId], references: [id])
+  attachments           CaseAttachment[]
+  auditLogs             AuditLog[]
+
+  @@index([assigneeId])
+  @@index([investigationStatus])
+  @@index([severity])
+  @@index([categoryId])
+  @@index([tatBreach])
+}
+
+model CaseAttachment {
+  id           String   @id @default(cuid())
+  caseId       String
+  filename     String
+  storageKey   String
+  mimeType     String
+  size         Int
+  uploadedById String
+  uploadedAt   DateTime @default(now())
+  case         Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  caseId    String?
+  entity    String
+  entityId  String
+  action    String   // CREATE | UPDATE | DELETE | STATUS_CHANGE | FILE_UPLOAD | ASSIGN | USER_* | LOGIN_*
+  diff      String   // JSON
+  userId    String
+  ip        String?  // request IP for admin/auth events (when available)
+  at        DateTime @default(now())
+  case      Case?    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([caseId])
+  @@index([entity, entityId])
+}
+
+model LookupCategory {
+  id    String              @id @default(cuid())
+  name  String              @unique
+  subs  LookupSubCategory[]
+  cases Case[]
+}
+
+model LookupSubCategory {
+  id         String          @id @default(cuid())
+  name       String
+  categoryId String
+  category   LookupCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  cases      Case[]
+  @@unique([categoryId, name])
+}
+
+model Employee {
+  id              String   @id @default(cuid())
+  eCode           String   @unique
+  name            String
+  title           String?  // Mr./Ms.
+  gender          String?
+  email           String?
+  entity          String?
+  grade           String?
+  designation     String?
+  department      String?
+  subDepartment   String?
+  function        String?
+  bu              String?
+  sbu             String?
+  segment         String?
+  subSegment      String?
+  city            String?
+  state           String?
+  location        String?
+  country         String?
+  employmentStatus String?
+  employmentType  String?
+  roleCategory    String?
+  role            String?
+  employeeType    String?
+  l1ManagerCode   String?
+  l1ManagerName   String?
+  l2ManagerCode   String?
+  l2ManagerName   String?
+  hrbpCode        String?
+  hrbpName        String?
+  hrSpocCode      String?
+  hrSpocName      String?
+  hodCode         String?
+  mobileNumber    String?
+  // Additional columns from Employee Master xlsx
+  groupDoj        String?
+  entityDoj       String?
+  confirmationDate String?
+  bizOpsCode      String?
+  bizOpsName      String?
+  noticePeriod    String?
+  totalExperience String?
+  fatherName      String?
+  bloodGroup      String?
+  personalEmail   String?
+  maritalStatus   String?
+  actualLwd       String?
+  category        String?
+  confirmationStatus String?
+  probationPeriod String?
+  actualEmployment String?
+  actualLocation  String?
+  dateOfResignation String?
+  hrbpLeadCode    String?
+  hrbpLeadName    String?
+  functionalManager String?
+  contractEndDate String?
+
+  @@index([name])
+  @@index([entity])
+  @@index([department])
+  @@index([employmentStatus])
+}
+
+model EmployeeUploadLog {
+  id          String   @id @default(cuid())
+  filename    String
+  rowCount    Int
+  uploadedById String
+  uploadedBy  User     @relation(fields: [uploadedById], references: [id])
+  uploadedAt  DateTime @default(now())
+}
+
+model AppSetting {
+  key   String @id
+  value String
+}
+
+// Admin-controlled onboarding: a pending access request awaiting review.
+// Created when someone signs in with Google but has no account yet.
+model UserRequest {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique   // one open request per email; blocks duplicates
+  firebaseUid  String?             // set when the request came via Google
+  loginMethod  String              // "PASSWORD" | "GOOGLE"
+  status       String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  note         String?             // optional reviewer note / rejection reason
+  requestedAt  DateTime  @default(now())
+  reviewedAt   DateTime?
+  reviewedById String?
+  reviewedBy   User?     @relation("RequestReviewer", fields: [reviewedById], references: [id])
+
+  @@index([status])
+}
