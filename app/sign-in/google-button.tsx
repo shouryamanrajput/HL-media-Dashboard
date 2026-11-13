@@ -78,7 +78,7 @@ export function GoogleSignInButton() {
       // Existing, approved account → this signs them straight in.
       const res = await signIn("firebase", { idToken, redirect: false });
       if (!res?.error) {
-        window.location.href = "/cases";
+        window.location.href = "/projects";
         return;
       }
 

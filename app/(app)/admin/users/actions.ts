@@ -18,8 +18,8 @@ export async function createUser(formData: FormData) {
   const name = String(formData.get("name") ?? "");
   const password = String(formData.get("password") ?? "");
   const rolesArr = formData.getAll("roles").map(String).filter(Boolean);
-  const roles = rolesArr.join(",") || "INVESTIGATOR";
-  const role = rolesArr[0] || "INVESTIGATOR"; // primary role for backward compat
+  const roles = rolesArr.join(",") || "EDITOR";
+  const role = rolesArr[0] || "EDITOR"; // primary role for backward compat
   const scopeEntity = String(formData.get("scopeEntity") ?? "") || null;
   const scopeDept = String(formData.get("scopeDept") ?? "") || null;
   if (!email || !name || !password) throw new Error("BAD_REQUEST");
@@ -36,8 +36,8 @@ export async function updateUserRoles(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const rolesArr = formData.getAll("roles").map(String).filter(Boolean);
-  const roles = rolesArr.join(",") || "INVESTIGATOR";
-  const role = rolesArr[0] || "INVESTIGATOR";
+  const roles = rolesArr.join(",") || "EDITOR";
+  const role = rolesArr[0] || "EDITOR";
   if (!id) throw new Error("BAD_REQUEST");
   await db.user.update({ where: { id }, data: { role, roles } });
   revalidatePath("/admin/users");
@@ -95,19 +95,19 @@ export async function deleteUser(formData: FormData) {
   const u = await db.user.findUnique({
     where: { id },
     include: {
-      _count: { select: { assignedCases: true, createdCases: true } },
+      _count: { select: { editedProjects: true, createdProjects: true } },
     },
   });
   if (!u) throw new Error("NOT_FOUND");
 
-  if (u._count.assignedCases > 0 || u._count.createdCases > 0) {
+  if (u._count.editedProjects > 0 || u._count.createdProjects > 0) {
     throw new Error(
-      "Cannot delete user with associated cases. Reassign or close their cases first, or deactivate the user instead."
+      "Cannot delete user with associated projects. Reassign their projects first, or deactivate the user instead."
     );
   }
 
   await db.auditLog.deleteMany({ where: { userId: id } });
-  await db.caseAttachment.deleteMany({ where: { uploadedById: id } });
+  await db.projectAsset.deleteMany({ where: { uploadedById: id } });
   await db.user.delete({ where: { id } });
   revalidatePath("/admin/users");
   revalidatePath("/sign-in");

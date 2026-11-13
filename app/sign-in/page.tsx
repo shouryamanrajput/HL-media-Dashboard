@@ -17,33 +17,32 @@ export default function SignInPage() {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
-            <div className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm grid place-items-center">
-              <Icon name="shield" className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-white/90 font-bold text-lg tracking-tight">Vigilance</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/hl-media-logo.svg" alt="HL Media" className="h-10 w-10 rounded-xl" />
+            <span className="text-white/90 font-bold text-lg tracking-tight">HL Media</span>
           </div>
         </div>
 
         <div className="relative z-10 space-y-6">
           <h2 className="text-[2.5rem] font-bold text-white leading-[1.15] tracking-tight">
-            Case Management<br />
-            <span className="text-[#6dcfff]">System</span>
+            Video Project<br />
+            <span className="text-[#6dcfff]">Studio</span>
           </h2>
           <p className="text-white/50 text-sm leading-relaxed max-w-[340px]">
-            Track investigations, manage assignments, monitor SLA compliance, and generate reports — all in one place.
+            Plan shoots, track edits, run internal reviews and hit every delivery date — all in one place.
           </p>
           <div className="space-y-3 pt-2">
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-lg bg-white/[0.08] grid place-items-center">
-                <Icon name="shield" className="h-4 w-4 text-[#6dcfff]" />
+                <Icon name="list" className="h-4 w-4 text-[#6dcfff]" />
               </div>
-              <span className="text-sm text-white/60">End-to-end investigation tracking</span>
+              <span className="text-sm text-white/60">Brief-to-delivery project pipeline</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-lg bg-white/[0.08] grid place-items-center">
                 <Icon name="clock" className="h-4 w-4 text-[#6dcfff]" />
               </div>
-              <span className="text-sm text-white/60">Automated SLA & TAT monitoring</span>
+              <span className="text-sm text-white/60">Deadline and workload tracking</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-lg bg-white/[0.08] grid place-items-center">
@@ -56,7 +55,7 @@ export default function SignInPage() {
 
         <div className="relative z-10">
           <p className="text-[11px] text-white/25 font-medium tracking-wide">
-            INTERNAL USE ONLY · PAYTM VIGILANCE
+            INTERNAL USE ONLY · HL MEDIA
           </p>
         </div>
       </div>
@@ -65,19 +64,14 @@ export default function SignInPage() {
       <div className="flex-1 flex items-center justify-center px-6 py-12 bg-[#fafbfd] relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(0,186,242,0.04)_0%,_transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(0,41,112,0.03)_0%,_transparent_60%)]" />
-        <div className="absolute top-6 right-8 z-20">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/paytm-logo.svg" alt="Paytm" className="h-6" />
-        </div>
 
         <div className="w-full max-w-[400px] relative z-10">
           {/* Mobile logo */}
           <div className="flex flex-col items-center mb-8 lg:hidden">
-            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#00BAF2] to-[#002970] text-white grid place-items-center shadow-lg mb-4">
-              <Icon name="shield" className="h-7 w-7" />
-            </div>
-            <h1 className="text-xl font-bold text-ink-900 tracking-tight">Vigilance</h1>
-            <p className="text-xs text-ink-400 mt-0.5">Case Management System</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/hl-media-logo.svg" alt="HL Media" className="h-14 w-14 rounded-2xl shadow-lg mb-4" />
+            <h1 className="text-xl font-bold text-ink-900 tracking-tight">HL Media</h1>
+            <p className="text-xs text-ink-400 mt-0.5">Video Project Studio</p>
           </div>
 
           <div className="mb-8 text-center lg:text-left">
@@ -90,7 +84,7 @@ export default function SignInPage() {
           {googleEnabled && <GoogleSignInButton />}
 
           <p className="text-center text-[10px] text-ink-300 mt-8 font-medium tracking-widest uppercase">
-            Internal use only · Paytm Vigilance
+            Internal use only · HL Media
           </p>
         </div>
       </div>

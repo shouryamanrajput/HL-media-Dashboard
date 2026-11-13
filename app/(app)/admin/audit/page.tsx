@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { can } from "@/lib/rbac";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, projectCode } from "@/lib/utils";
 import Link from "next/link";
 
 export default async function AuditPage() {
@@ -13,7 +13,7 @@ export default async function AuditPage() {
   const logs = await db.auditLog.findMany({
     take: 200,
     orderBy: { at: "desc" },
-    include: { user: { select: { name: true } }, case: { select: { caseNo: true } } },
+    include: { user: { select: { name: true } }, project: { select: { projectNo: true } } },
   });
 
   return (
@@ -39,7 +39,7 @@ export default async function AuditPage() {
                   <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">{formatDateTime(l.at)}</td>
                   <td className="px-3 py-2">{l.user.name}</td>
                   <td className="px-3 py-2">
-                    {l.case ? <Link className="text-primary-700 hover:underline" href={`/cases/${l.caseId}`}>Case #{l.case.caseNo}</Link> : `${l.entity}:${l.entityId.slice(0, 6)}`}
+                    {l.project ? <Link className="text-primary-700 hover:underline" href={`/projects/${l.projectId}`}>{projectCode(l.project.projectNo)}</Link> : `${l.entity}:${l.entityId.slice(0, 6)}`}
                   </td>
                   <td className="px-3 py-2"><span className="badge bg-gray-100 text-gray-700">{l.action}</span></td>
                   <td className="px-3 py-2 text-xs">

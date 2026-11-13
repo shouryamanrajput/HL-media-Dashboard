@@ -91,9 +91,8 @@ export default async function UsersAdminPage() {
             <div className="flex flex-wrap gap-3 py-2">
               {[
                 ["ADMIN", "Admin"],
-                ["INVESTIGATOR", "Investigator"],
-                ["REVIEWER_L1", "Reviewer (L1)"],
-                ["REVIEWER_L2", "Reviewer (L2)"],
+                ["EDITOR", "Editor"],
+                ["REVIEWER", "Reviewer"],
               ].map(([value, label]) => (
                 <label key={value} className="inline-flex items-center gap-1.5 text-sm">
                   <input type="checkbox" name="roles" value={value} className="rounded border-ink-300" />
@@ -134,9 +133,8 @@ export default async function UsersAdminPage() {
                       <div className="flex flex-wrap gap-1.5">
                         {[
                           ["ADMIN", "Admin"],
-                          ["INVESTIGATOR", "Investigator"],
-                          ["REVIEWER_L1", "L1"],
-                          ["REVIEWER_L2", "L2"],
+                          ["EDITOR", "Editor"],
+                          ["REVIEWER", "Reviewer"],
                         ].map(([value, label]) => (
                           <label key={value} className="inline-flex items-center gap-1 text-xs">
                             <input type="checkbox" name="roles" value={value} defaultChecked={(u.roles || u.role || "").includes(value)} className="rounded border-ink-300 h-3.5 w-3.5" />

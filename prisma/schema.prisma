@@ -12,12 +12,12 @@ model User {
   email         String    @unique
   name          String
   passwordHash  String?   // optional — Google-only users & approved-but-not-yet-set-up users have no password
-  employeeCode  String?   @unique
-  entity        String?
-  grade         String?
-  department    String?
-  role          String    @default("INVESTIGATOR") // ADMIN | INVESTIGATOR | REVIEWER_L1 | REVIEWER_L2
-  roles         String    @default("") // comma-separated: "ADMIN,REVIEWER_L1"
+  title         String?   // job title, e.g. "Senior Editor"
+  department    String?   // team, e.g. "Post-production"
+  skills        String?   // comma-separated: "Editing,Color,Motion graphics"
+  capacityHours Int?      // weekly hours available for task work
+  role          String    @default("EDITOR") // ADMIN | EDITOR | REVIEWER
+  roles         String    @default("") // comma-separated: "ADMIN,REVIEWER"
   scopeEntity   String?
   scopeDept     String?
   active        Boolean   @default(true)
@@ -28,13 +28,14 @@ model User {
   createdBy     User?     @relation("UserCreatedBy", fields: [createdById], references: [id])
   createdUsers  User[]    @relation("UserCreatedBy")
   reviewedRequests UserRequest[] @relation("RequestReviewer")
-  assignedCases Case[]    @relation("assignee")
-  createdCases  Case[]    @relation("creator")
-  l1ReviewCases Case[]    @relation("l1Reviewer")
-  l2ReviewCases Case[]    @relation("l2Reviewer")
-  attachments   CaseAttachment[]
+  editedProjects   Project[] @relation("editor")
+  reviewedProjects Project[] @relation("reviewer")
+  createdProjects  Project[] @relation("creator")
+  assignedTasks    Task[]    @relation("taskAssignee")
+  createdTasks     Task[]    @relation("taskCreator")
+  assets        ProjectAsset[]
+  comments      Comment[]
   auditLogs     AuditLog[]
-  employeeUploads EmployeeUploadLog[]
   passwordResetRequests    PasswordResetRequest[] @relation("passwordResetRequests")
   passwordResetResolutions PasswordResetRequest[] @relation("passwordResetResolutions")
 }
@@ -53,223 +54,171 @@ model PasswordResetRequest {
   @@index([status])
 }
 
-model Case {
-  id                    String   @id @default(cuid())
-  caseNo                Int      @unique
-
-  // Intake (cols A-AA)
-  escalationChannel     String
-  complaintDate         DateTime
-  escalationDate        DateTime?
-  assignDate            DateTime?
-  month                 String
-  severity              String   // LOW | MEDIUM | HIGH | CRITICAL
-  assigneeId            String?
-  subjectLine           String
-  complainantType       String?
-  complainantName       String?
-  complainantECode      String?
-  complainantEntity     String?
-  complainantGrade      String?
-  complainantMobile     String?
-  complainantEmail      String?
-  respondentName        String
-  respondentECode       String?
-  respondentEntity      String
-  respondentGrade       String?
-  respondents           String?  // JSON array for multiple respondents [{name,eCode,entity,grade,dept,city,state,hrbpSpoc,hodName,hodEntity}]
-  city                  String?
-  state                 String?
-  hrbpSpoc              String?
-  hodName               String?
-  hodEntity             String?
-  respondentDept        String?
-  saleNonSale           String?
-  categoryId            String
-  subCategoryId         String
-
-  // Investigation lifecycle (AB+)
-  reportLink            String?
-  investigationStatus   String   @default("INVESTIGATION_NOT_STARTED") // INVESTIGATION_NOT_STARTED | INCOMPLETE_DETAILS | INVESTIGATION_IN_PROGRESS | DRAFT_REVIEW | CLOSED_WITH_MHD | CLOSED_WITH_HR_SPOC | PENDING_L1_REVIEW | PENDING_L2_REVIEW | CLOSED
-  investigationStartedAt DateTime?   // auto-captured when investigation starts
-  investigationReport   String?  // JSON blob for structured report
-
-  // Review workflow
-  l1ReviewerId          String?
-  l2ReviewerId          String?
-  investigatorSubmittedAt DateTime?
-  l1ReviewStartedAt     DateTime?
-  l1ReviewedAt          DateTime?
-  l1ReviewStatus        String?      // REVIEW_NOT_STARTED | REVIEW_IN_PROGRESS | CORRECTIONS_REQUIRED | CORRECTIONS_COMPLETED | COMPLETED
-  l1Comments            String?
-  l2ReviewStartedAt     DateTime?
-  l2ReviewedAt          DateTime?
-  l2ReviewStatus        String?      // REVIEW_NOT_STARTED | REVIEW_IN_PROGRESS | CORRECTIONS_REQUIRED | CORRECTIONS_COMPLETED | COMPLETED
-  l2Comments            String?
-  remarks1              String?
-  substantiated         String?  // SUBSTANTIATED | UNSUBSTANTIATED | PARTIALLY_SUBSTANTIATED | NA
-  reportStatus          String?  // NA - Unsubstantiated | Report ready for DC | Report sent to DC | Report sent to CBO | Report sent to CHRO | NA
-  closureDate           DateTime?
-  processRecApproved    String?  // YES | NO | NA
-  employeeRecApproved   String?  // YES | NO | NA
-  recommendationApprovalDate DateTime?
-  employeeActionCount   Int      @default(0)
-  employeeAction        String?
-  employeeActionStatus  String?
-  employeeActionDate    DateTime?
-  processAction         String?
-  processActionStatus   String?
-  processActionDate     DateTime?
-
-  // Computed
-  tatDays               Int?
-  caseAge               Int?
-  tatBreach             Boolean  @default(false)
-  breachReason          String?
-  remarks2              String?
-
-  // Custom extension
-  extraFields           String?  // JSON blob
-
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  createdById           String
-
-  assignee              User?    @relation("assignee", fields: [assigneeId], references: [id])
-  creator               User     @relation("creator", fields: [createdById], references: [id])
-  l1Reviewer            User?    @relation("l1Reviewer", fields: [l1ReviewerId], references: [id])
-  l2Reviewer            User?    @relation("l2Reviewer", fields: [l2ReviewerId], references: [id])
-  category              LookupCategory     @relation(fields: [categoryId], references: [id])
-  subCategory           LookupSubCategory  @relation(fields: [subCategoryId], references: [id])
-  attachments           CaseAttachment[]
-  auditLogs             AuditLog[]
-
-  @@index([assigneeId])
-  @@index([investigationStatus])
-  @@index([severity])
-  @@index([categoryId])
-  @@index([tatBreach])
+model Client {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  contactName String?
+  email       String?
+  phone       String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  projects    Project[]
 }
 
-model CaseAttachment {
+model ProjectType {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  projects Project[]
+}
+
+model Project {
+  id                   String    @id @default(cuid())
+  projectNo            Int       @unique
+  title                String
+  brief                String?
+  clientId             String?
+  projectTypeId        String?
+  source               String?   // Referral | Website | Instagram | Repeat client | Other
+  priority             String    @default("MEDIUM") // LOW | MEDIUM | HIGH | URGENT
+  stage                String    @default("BRIEF")  // see STAGE_LIST in lib/utils.ts
+  editorId             String?
+  reviewerId           String?
+
+  receivedDate         DateTime  @default(now())
+  startDate            DateTime?
+  dueDate              DateTime?
+  deliveredAt          DateTime?
+
+  // Internal review
+  submittedForReviewAt DateTime?
+  reviewedAt           DateTime?
+  reviewStatus         String?   // CHANGES_REQUESTED | APPROVED
+  reviewComments       String?
+  revisionCount        Int       @default(0)
+
+  // Delivery
+  finalLink            String?
+  deliveryNotes        String?
+
+  // Computed by lib/deadlines.ts
+  daysOpen             Int?
+  turnaroundDays       Int?
+  isOverdue            Boolean   @default(false)
+  overdueReason        String?
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  createdById          String
+
+  client               Client?      @relation(fields: [clientId], references: [id])
+  projectType          ProjectType? @relation(fields: [projectTypeId], references: [id])
+  editor               User?        @relation("editor", fields: [editorId], references: [id])
+  reviewer             User?        @relation("reviewer", fields: [reviewerId], references: [id])
+  creator              User         @relation("creator", fields: [createdById], references: [id])
+  tasks                Task[]
+  deliverables         Deliverable[]
+  assets               ProjectAsset[]
+  comments             Comment[]
+  auditLogs            AuditLog[]
+
+  @@index([editorId])
+  @@index([stage])
+  @@index([priority])
+  @@index([clientId])
+  @@index([isOverdue])
+}
+
+model Task {
+  id            String    @id @default(cuid())
+  projectId     String
+  title         String
+  description   String?
+  assigneeId    String?
+  status        String    @default("TODO") // TODO | IN_PROGRESS | IN_REVIEW | DONE
+  dueDate       DateTime?
+  estimateHours Float?
+  loggedHours   Float     @default(0)
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  createdById   String
+
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee      User?     @relation("taskAssignee", fields: [assigneeId], references: [id])
+  creator       User      @relation("taskCreator", fields: [createdById], references: [id])
+  comments      Comment[]
+
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([status])
+}
+
+model Deliverable {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  platform    String?  // YouTube | Instagram | ...
+  aspectRatio String?  // 16:9 | 9:16 | 1:1 | 4:5
+  durationSec Int?
+  status      String   @default("PENDING") // PENDING | IN_PROGRESS | READY | DELIVERED
+  link        String?
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model ProjectAsset {
   id           String   @id @default(cuid())
-  caseId       String
-  filename     String
-  storageKey   String
-  mimeType     String
-  size         Int
+  projectId    String
+  kind         String   // RAW | DRAFT | FINAL | REFERENCE | OTHER
+  label        String
+  version      Int?
+  url          String?  // external link (Frame.io / Drive / Dropbox / YouTube)
+  filename     String?  // uploaded file
+  storageKey   String?
+  mimeType     String?
+  size         Int?
   uploadedById String
   uploadedAt   DateTime @default(now())
-  case         Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+
+  @@index([projectId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  projectId String
+  taskId    String?
+  userId    String
+  body      String
+  createdAt DateTime @default(now())
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([projectId])
 }
 
 model AuditLog {
   id        String   @id @default(cuid())
-  caseId    String?
+  projectId String?
   entity    String
   entityId  String
-  action    String   // CREATE | UPDATE | DELETE | STATUS_CHANGE | FILE_UPLOAD | ASSIGN | USER_* | LOGIN_*
+  action    String   // CREATE | UPDATE | DELETE | STAGE_CHANGE | FILE_UPLOAD | ASSIGN | REVIEW | USER_* | LOGIN_*
   diff      String   // JSON
   userId    String
   ip        String?  // request IP for admin/auth events (when available)
   at        DateTime @default(now())
-  case      Case?    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
 
-  @@index([caseId])
+  @@index([projectId])
   @@index([entity, entityId])
-}
-
-model LookupCategory {
-  id    String              @id @default(cuid())
-  name  String              @unique
-  subs  LookupSubCategory[]
-  cases Case[]
-}
-
-model LookupSubCategory {
-  id         String          @id @default(cuid())
-  name       String
-  categoryId String
-  category   LookupCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  cases      Case[]
-  @@unique([categoryId, name])
-}
-
-model Employee {
-  id              String   @id @default(cuid())
-  eCode           String   @unique
-  name            String
-  title           String?  // Mr./Ms.
-  gender          String?
-  email           String?
-  entity          String?
-  grade           String?
-  designation     String?
-  department      String?
-  subDepartment   String?
-  function        String?
-  bu              String?
-  sbu             String?
-  segment         String?
-  subSegment      String?
-  city            String?
-  state           String?
-  location        String?
-  country         String?
-  employmentStatus String?
-  employmentType  String?
-  roleCategory    String?
-  role            String?
-  employeeType    String?
-  l1ManagerCode   String?
-  l1ManagerName   String?
-  l2ManagerCode   String?
-  l2ManagerName   String?
-  hrbpCode        String?
-  hrbpName        String?
-  hrSpocCode      String?
-  hrSpocName      String?
-  hodCode         String?
-  mobileNumber    String?
-  // Additional columns from Employee Master xlsx
-  groupDoj        String?
-  entityDoj       String?
-  confirmationDate String?
-  bizOpsCode      String?
-  bizOpsName      String?
-  noticePeriod    String?
-  totalExperience String?
-  fatherName      String?
-  bloodGroup      String?
-  personalEmail   String?
-  maritalStatus   String?
-  actualLwd       String?
-  category        String?
-  confirmationStatus String?
-  probationPeriod String?
-  actualEmployment String?
-  actualLocation  String?
-  dateOfResignation String?
-  hrbpLeadCode    String?
-  hrbpLeadName    String?
-  functionalManager String?
-  contractEndDate String?
-
-  @@index([name])
-  @@index([entity])
-  @@index([department])
-  @@index([employmentStatus])
-}
-
-model EmployeeUploadLog {
-  id          String   @id @default(cuid())
-  filename    String
-  rowCount    Int
-  uploadedById String
-  uploadedBy  User     @relation(fields: [uploadedById], references: [id])
-  uploadedAt  DateTime @default(now())
 }
 
 model AppSetting {

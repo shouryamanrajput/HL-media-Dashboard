@@ -6,8 +6,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Vigilance Case Manager",
-  description: "Internal vigilance case tracking and investigation tool",
+  title: "HL Media — Project Studio",
+  description: "Internal video production project and task management for HL Media",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

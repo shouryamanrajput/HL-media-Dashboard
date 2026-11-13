@@ -6,7 +6,7 @@ import { can, type SessionUser } from "@/lib/rbac";
 import { recordAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 
-const VALID_ROLES = ["ADMIN", "INVESTIGATOR", "REVIEWER_L1", "REVIEWER_L2"];
+const VALID_ROLES = ["ADMIN", "EDITOR", "REVIEWER"];
 
 async function requireApprover(): Promise<SessionUser> {
   const s = await auth();
@@ -68,7 +68,7 @@ export async function approveRequest(formData: FormData) {
   await recordAudit({
     entity: "User",
     entityId: outcome.userId,
-    caseId: null,
+    projectId: null,
     action: "USER_APPROVED",
     diff: { email: { before: null, after: outcome.email }, roles: { before: null, after: roles } },
     userId: admin.id,
@@ -98,7 +98,7 @@ export async function rejectRequest(formData: FormData) {
   await recordAudit({
     entity: "UserRequest",
     entityId: id,
-    caseId: null,
+    projectId: null,
     action: "USER_REJECTED",
     diff: { email: { before: req.email, after: req.email }, status: { before: "PENDING", after: "REJECTED" } },
     userId: admin.id,

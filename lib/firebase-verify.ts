@@ -1,7 +1,6 @@
 /**
- * Server-side Firebase ID token verification — ported from the Case Management
- * system's server/lib/auth.js (which used the public securetoken certs so no
- * Firebase service-account key is needed). Here we use `jose` (already a
+ * Server-side Firebase ID token verification using the public securetoken
+ * certs, so no Firebase service-account key is needed. Here we use `jose` (already a
  * dependency of the auth stack) against Firebase's published JWKS.
  *
  * Verifies signature (RS256), issuer, audience, and expiry — identity only.

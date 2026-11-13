@@ -23,7 +23,7 @@ export function buildDiff<T extends Record<string, unknown>>(before: T | null, a
 export async function recordAudit(args: {
   entity: string;
   entityId: string;
-  caseId?: string | null;
+  projectId?: string | null;
   action: string;
   diff: Diff | Record<string, unknown>;
   userId: string;
@@ -33,7 +33,7 @@ export async function recordAudit(args: {
     data: {
       entity: args.entity,
       entityId: args.entityId,
-      caseId: args.caseId ?? null,
+      projectId: args.projectId ?? null,
       action: args.action,
       diff: JSON.stringify(args.diff),
       userId: args.userId,

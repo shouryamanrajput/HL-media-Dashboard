@@ -16,33 +16,29 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { PRIORITY_LIST, STAGE_LIST } from "@/lib/utils";
 
 /* ---------- constants ---------- */
 
 const FIELD_OPTIONS = [
-  { value: "severity", label: "Severity" },
-  { value: "status", label: "Investigation Status" },
-  { value: "channel", label: "Escalation Channel" },
-  { value: "entity", label: "Respondent Entity" },
-  { value: "month", label: "Month" },
-  { value: "saleNonSale", label: "Sale / Not-Sale" },
-  { value: "complainantType", label: "Type of Complainant" },
-  { value: "tatBreach", label: "TAT Breach" },
-  { value: "substantiated", label: "Substantiated" },
-  { value: "city", label: "City" },
-  { value: "state", label: "State" },
-  { value: "department", label: "Department" },
-  { value: "investigator", label: "Investigator" },
-  { value: "category", label: "Category" },
-  { value: "subCategory", label: "Sub-Category" },
+  { value: "priority", label: "Priority" },
+  { value: "status", label: "Stage" },
+  { value: "client", label: "Client" },
+  { value: "projectType", label: "Project Type" },
+  { value: "month", label: "Month Received" },
+  { value: "source", label: "Source" },
+  { value: "editor", label: "Editor" },
+  { value: "reviewer", label: "Reviewer" },
+  { value: "overdue", label: "Overdue" },
+  { value: "revisions", label: "Revision Rounds" },
 ] as const;
 
 type FieldKey = (typeof FIELD_OPTIONS)[number]["value"];
 
 const METRIC_OPTIONS = [
   { value: "count", label: "Count" },
-  { value: "avgTat", label: "Avg TAT (days)" },
-  { value: "avgAge", label: "Avg Case Age (days)" },
+  { value: "avgTat", label: "Avg Turnaround (days)" },
+  { value: "avgAge", label: "Avg Days Open" },
 ] as const;
 
 type MetricKey = (typeof METRIC_OPTIONS)[number]["value"];
@@ -74,18 +70,8 @@ const COLORS = [
   "#d97706",
 ];
 
-const SEVERITY_OPTIONS = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-const STATUS_OPTIONS = [
-  "INVESTIGATION_NOT_STARTED",
-  "INCOMPLETE_DETAILS",
-  "INVESTIGATION_IN_PROGRESS",
-  "DRAFT_REVIEW",
-  "CLOSED_WITH_MHD",
-  "CLOSED_WITH_HR_SPOC",
-  "PENDING_L1_REVIEW",
-  "PENDING_L2_REVIEW",
-  "CLOSED",
-];
+const PRIORITY_OPTIONS = [...PRIORITY_LIST] as string[];
+const STATUS_OPTIONS = [...STAGE_LIST] as string[];
 
 /* ---------- shared chart styles (matches overview/charts.tsx) ---------- */
 
@@ -108,32 +94,27 @@ const legendStyle = { fontSize: 11, paddingTop: 12, fontWeight: 500 };
 
 /* ---------- types ---------- */
 
-export type CaseRow = {
-  severity: string;
+export type ProjectRow = {
+  priority: string;
   status: string;
-  channel: string;
-  entity: string;
+  client: string;
+  projectType: string;
   month: string;
-  saleNonSale: string;
-  complainantType: string;
-  tatBreach: string;
-  substantiated: string;
-  city: string;
-  state: string;
-  department: string;
-  investigator: string;
-  category: string;
-  subCategory: string;
-  tatDays: number;
-  caseAge: number;
-  complaintDate: string;
-  closureDate: string | null;
+  source: string;
+  editor: string;
+  reviewer: string;
+  overdue: string;
+  revisions: string;
+  turnaroundDays: number;
+  daysOpen: number;
+  receivedDate: string;
+  deliveredDate: string | null;
 };
 
 /* ---------- aggregation helpers ---------- */
 
 function aggregate(
-  rows: CaseRow[],
+  rows: ProjectRow[],
   xAxis: FieldKey,
   metric: MetricKey,
   groupBy: FieldKey | "none"
@@ -144,8 +125,8 @@ function aggregate(
       const key = row[xAxis];
       const entry = buckets.get(key) ?? { sum: 0, count: 0 };
       entry.count += 1;
-      if (metric === "avgTat") entry.sum += row.tatDays;
-      else if (metric === "avgAge") entry.sum += row.caseAge;
+      if (metric === "avgTat") entry.sum += row.turnaroundDays;
+      else if (metric === "avgAge") entry.sum += row.daysOpen;
       buckets.set(key, entry);
     }
     const chartData = [...buckets.entries()].map(([name, { sum, count }]) => ({
@@ -175,8 +156,8 @@ function aggregate(
     const inner = buckets.get(xKey)!;
     const entry = inner.get(gKey) ?? { sum: 0, count: 0 };
     entry.count += 1;
-    if (metric === "avgTat") entry.sum += row.tatDays;
-    else if (metric === "avgAge") entry.sum += row.caseAge;
+    if (metric === "avgTat") entry.sum += row.turnaroundDays;
+    else if (metric === "avgAge") entry.sum += row.daysOpen;
     inner.set(gKey, entry);
   }
 
@@ -243,8 +224,8 @@ function renderPieLabel({
 
 /* ---------- main component ---------- */
 
-export function AnalyticsBuilder({ data }: { data: CaseRow[] }) {
-  const [xAxis, setXAxis] = useState<FieldKey>("severity");
+export function AnalyticsBuilder({ data }: { data: ProjectRow[] }) {
+  const [xAxis, setXAxis] = useState<FieldKey>("status");
   const [metric, setMetric] = useState<MetricKey>("count");
   const [groupBy, setGroupBy] = useState<FieldKey | "none">("none");
   const [chartType, setChartType] = useState<ChartType>("bar");
@@ -254,26 +235,26 @@ export function AnalyticsBuilder({ data }: { data: CaseRow[] }) {
   const [showFilters, setShowFilters] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [sevFilter, setSevFilter] = useState<string[]>([]);
+  const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
 
   // apply filters
   const filtered = useMemo(() => {
     let rows = data;
     if (dateFrom) {
-      rows = rows.filter((r) => r.complaintDate >= dateFrom);
+      rows = rows.filter((r) => r.receivedDate >= dateFrom);
     }
     if (dateTo) {
-      rows = rows.filter((r) => r.complaintDate <= dateTo);
+      rows = rows.filter((r) => r.receivedDate <= dateTo);
     }
-    if (sevFilter.length > 0) {
-      rows = rows.filter((r) => sevFilter.includes(r.severity));
+    if (priorityFilter.length > 0) {
+      rows = rows.filter((r) => priorityFilter.includes(r.priority));
     }
     if (statusFilter.length > 0) {
       rows = rows.filter((r) => statusFilter.includes(r.status));
     }
     return rows;
-  }, [data, dateFrom, dateTo, sevFilter, statusFilter]);
+  }, [data, dateFrom, dateTo, priorityFilter, statusFilter]);
 
   // aggregate
   const { chartData, groupKeys } = useMemo(
@@ -454,16 +435,16 @@ export function AnalyticsBuilder({ data }: { data: CaseRow[] }) {
               </div>
             </div>
 
-            {/* Severity multi-select */}
+            {/* Priority multi-select */}
             <div>
-              <label className="label mb-1.5">Severity</label>
+              <label className="label mb-1.5">Priority</label>
               <div className="flex flex-wrap gap-2">
-                {SEVERITY_OPTIONS.map((s) => (
+                {PRIORITY_OPTIONS.map((s) => (
                   <button
                     key={s}
-                    onClick={() => toggleFilter(sevFilter, setSevFilter, s)}
+                    onClick={() => toggleFilter(priorityFilter, setPriorityFilter, s)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                      sevFilter.includes(s)
+                      priorityFilter.includes(s)
                         ? "bg-primary-50 dark:bg-primary-900/30 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300"
                         : "bg-white dark:bg-white/[0.03] border-ink-200 dark:border-white/[0.08] text-ink-500 dark:text-gray-400 hover:border-ink-300 dark:hover:border-white/[0.12]"
                     }`}
@@ -476,7 +457,7 @@ export function AnalyticsBuilder({ data }: { data: CaseRow[] }) {
 
             {/* Status multi-select */}
             <div>
-              <label className="label mb-1.5">Status</label>
+              <label className="label mb-1.5">Stage</label>
               <div className="flex flex-wrap gap-2">
                 {STATUS_OPTIONS.map((s) => (
                   <button
@@ -497,12 +478,12 @@ export function AnalyticsBuilder({ data }: { data: CaseRow[] }) {
             </div>
 
             {/* Clear filters */}
-            {(dateFrom || dateTo || sevFilter.length > 0 || statusFilter.length > 0) && (
+            {(dateFrom || dateTo || priorityFilter.length > 0 || statusFilter.length > 0) && (
               <button
                 onClick={() => {
                   setDateFrom("");
                   setDateTo("");
-                  setSevFilter([]);
+                  setPriorityFilter([]);
                   setStatusFilter([]);
                 }}
                 className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 transition-colors"
@@ -517,7 +498,7 @@ export function AnalyticsBuilder({ data }: { data: CaseRow[] }) {
       {/* Stats bar + export buttons */}
       <div className="flex items-center gap-4 text-xs text-ink-500 dark:text-gray-400 font-medium px-1">
         <span>
-          {filtered.length} case{filtered.length !== 1 ? "s" : ""} matched
+          {filtered.length} project{filtered.length !== 1 ? "s" : ""} matched
         </span>
         <span className="text-ink-300 dark:text-gray-600">|</span>
         <span>{chartData.length} categories on X-axis</span>

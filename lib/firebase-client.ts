@@ -1,6 +1,6 @@
 "use client";
 /**
- * Firebase (browser) initialisation — ported from the Case Management system.
+ * Firebase (browser) initialisation.
  * Used only for the "Continue with Google" sign-in: the browser authenticates
  * with Firebase, then hands the resulting ID token to NextAuth (see the
  * `firebase` credentials provider in lib/auth.ts) which mints the app session.

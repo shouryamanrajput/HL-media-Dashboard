@@ -1,75 +1,45 @@
-# Vigilance Case Manager
+# HL Media — Project Studio
 
-Web app replacing the legacy 47-column Excel tracker. Prototype-ready, Paytm-deploy-ready.
+Internal project and task management for HL Media's video editing and production work. Clients never log in; each project records which client it is for.
 
 ## Quick start
 
 ```bash
 npm install
-npm run db:reset      # creates SQLite db + seeds lookups + demo users
-npm run dev           # http://localhost:3000
+cp .env.example .env        # then set AUTH_SECRET
+npm run db:reset            # creates prisma/prisma/dev.db and seeds demo data
+npm run dev
 ```
 
-Sign in with the seeded user `test@gmail.com` / `password`.
+Open http://localhost:3000 and sign in.
 
-## What's included
+| Email | Password | Role |
+| --- | --- | --- |
+| test@gmail.com | password | Admin + Reviewer |
+| editor@gmail.com | password | Editor |
+| reviewer@gmail.com | password | Reviewer |
 
-- **Auth + RBAC** — Admin, Investigator, Reviewer, HRBP (entity-scoped), HOD (dept-scoped), Viewer.
-- **Case management** — 6-step intake form (cols A–AA), tabbed detail page for the investigation lifecycle (AB+), inline edit, attachments, audit log.
-- **TAT engine** — auto-computed TAT / case age / breach flag, per-severity SLA (`lib/tat.ts`).
-- **Three dashboards** — Overview, Workload (per-investigator load, severity mix, aging heatmap, capacity badge, unassigned widget, categories handled), Compliance/TAT.
-- **Bulk Excel import** — `/import` route consumes the legacy tracker; unknown categories/sub-categories are auto-created.
-- **Audit log** — every change captured with field-level diff (`lib/audit.ts`).
-- **File attachments** — RBAC-enforced download via `/api/attachments/[id]`.
+## What's inside
 
-## Layout
+- **Projects** (`HLM-0001`…): client, type, priority, due date, editor and reviewer. Stages run Brief → Pre-production → Footage Received → Editing → Internal Review → Revisions → Final Export → Delivered, plus On Hold and Cancelled.
+- **Board**: Kanban view; drag a card to change its stage.
+- **Tasks**: per-project to-dos with assignee, estimate and logged hours. **My Tasks** lists yours.
+- **Internal review**: editors submit a cut to a reviewer, who approves it or requests changes (this increments the revision count).
+- **Files & links**: upload drafts and finals (up to 50 MB, local disk or S3) or paste Frame.io, Drive or Dropbox links. Drafts and finals are versioned.
+- **Deliverables**: each export with platform, aspect ratio, length and status.
+- **Clients, Team, Dashboards** (overview, workload, deadlines/turnaround, custom analytics), **Excel import** with a downloadable template, and an **audit log**.
 
-```
-app/
-  (app)/              # authenticated shell
-    cases/            # list, new (stepper), [id] (tabs)
-    dashboard/        # overview, workload, compliance
-    admin/            # users, lookups, audit
-    import/           # bulk Excel import
-  sign-in/
-  api/
-    auth/[...nextauth]/
-    attachments/[id]/
-lib/
-  auth.ts             # Auth.js (credentials)
-  rbac.ts             # `can()` + visibility filter
-  db.ts               # Prisma client
-  tat.ts              # SLA/TAT computation (single source of truth)
-  audit.ts            # diff + persist
-  utils.ts            # formatting / colors
-prisma/
-  schema.prisma
-  seed.ts             # lookups + demo users
-scripts/
-  tat-scan.ts         # nightly: recompute breaches
-```
+## Roles
 
-## Cron / scheduled jobs
+- **Admin**: everything, including users, access requests, project types and imports.
+- **Editor**: sees projects they edit or have tasks on, and can update them.
+- **Reviewer**: sees all projects and works the review queue.
 
-```bash
-npm run cron:tat   # recomputes age & breach flag on all open cases
-```
+## Scripts
 
-Wire into cron / scheduler when deploying.
+- `npm run db:reset`: wipe and reseed the database.
+- `npm run cron:overdue`: recompute deadlines and email editors about newly overdue projects (run daily).
 
-## Paytm deployment notes
+## Configuration
 
-- **DB**: change `DATABASE_URL` in `.env` to Postgres and update `provider` in `prisma/schema.prisma` to `postgresql`.
-- **SSO**: replace the `Credentials` provider in `lib/auth.ts` with a SAML / OIDC provider that talks to Paytm IdP.
-- **File storage**: the upload path is `STORAGE_DIR`. Swap to an S3-compatible adapter (the API surface is local to `lib/...` and `app/api/attachments/[id]/route.ts`).
-- **Email** (TAT reminders): not wired in this prototype — `scripts/tat-scan.ts` flips the breach flag; add a mailer call there before promoting.
-
-## Smoke test
-
-1. `npm run db:reset && npm run dev`
-2. Sign in as `test@gmail.com` / `password`.
-3. `/import` → upload `Dummy Tracker.xlsx` → see 1 case imported.
-4. `/cases` → click the case → edit Investigation Status → save → audit tab shows the diff.
-5. `/dashboard/workload` → see Raina's load.
-6. `npm run cron:tat` → re-runs TAT computation.
-
+See `.env.example`. Email is logged to the console unless `SMTP_HOST` is set. Google sign-in stays hidden until the Firebase variables are filled in. Set `S3_BUCKET` to store uploads in S3 instead of `./uploads`.

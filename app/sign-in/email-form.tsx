@@ -23,7 +23,7 @@ export function EmailPasswordForm() {
         setBusy(false);
         return;
       }
-      window.location.href = "/cases";
+      window.location.href = "/projects";
     } catch {
       setError("Something went wrong. Please try again.");
       setBusy(false);

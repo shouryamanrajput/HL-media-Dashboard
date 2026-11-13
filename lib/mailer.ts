@@ -4,7 +4,7 @@ const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = Number(process.env.SMTP_PORT ?? 587);
 const SMTP_USER = process.env.SMTP_USER ?? "";
 const SMTP_PASS = process.env.SMTP_PASS ?? "";
-const SMTP_FROM = process.env.SMTP_FROM ?? "Vigilance <vigilance-noreply@paytm.com>";
+const SMTP_FROM = process.env.SMTP_FROM ?? "HL Media <no-reply@hlmedia.local>";
 
 const transporter = SMTP_HOST
   ? nodemailer.createTransport({
@@ -39,15 +39,15 @@ export async function sendEmail({
 export async function sendNotification({
   to,
   subject,
-  caseNo,
-  caseName,
+  projectCode,
+  projectName,
   body,
   actionUrl,
 }: {
   to: string;
   subject: string;
-  caseNo: number;
-  caseName: string;
+  projectCode: string;
+  projectName: string;
   body: string;
   actionUrl?: string;
 }): Promise<void> {
@@ -58,7 +58,7 @@ export async function sendNotification({
             <a href="${actionUrl}" target="_blank"
                style="display:inline-block;padding:12px 32px;font-size:14px;font-weight:600;
                       color:#ffffff;text-decoration:none;border-radius:6px">
-              View Case
+              View Project
             </a>
           </td>
         </tr>
@@ -82,10 +82,10 @@ export async function sendNotification({
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:0.5px">
-                    Vigilance
+                    HL Media
                   </td>
                   <td align="right" style="color:rgba(255,255,255,0.65);font-size:12px">
-                    Case&nbsp;#${caseNo}
+                    ${projectCode}
                   </td>
                 </tr>
               </table>
@@ -96,7 +96,7 @@ export async function sendNotification({
           <tr>
             <td style="padding:32px">
               <p style="margin:0 0 6px;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px">
-                ${caseName}
+                ${projectName}
               </p>
               <h2 style="margin:0 0 20px;font-size:18px;font-weight:600;color:#111827">
                 ${subject}
@@ -113,7 +113,7 @@ export async function sendNotification({
           <tr>
             <td style="padding:20px 32px;border-top:1px solid #e5e7eb">
               <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center">
-                This is an automated notification from the Paytm Vigilance Case Management System.
+                This is an automated notification from the HL Media project dashboard.
                 Please do not reply to this email.
               </p>
             </td>
@@ -126,5 +126,5 @@ export async function sendNotification({
 </body>
 </html>`.trim();
 
-  await sendEmail({ to, subject: `[Vigilance] ${subject}`, html });
+  await sendEmail({ to, subject: `[HL Media] ${subject}`, html });
 }

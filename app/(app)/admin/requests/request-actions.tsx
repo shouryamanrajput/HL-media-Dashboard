@@ -9,9 +9,8 @@ type Req = { id: string; name: string; email: string; loginMethod: string };
 
 const ROLE_OPTIONS: [string, string][] = [
   ["ADMIN", "Admin"],
-  ["INVESTIGATOR", "Investigator"],
-  ["REVIEWER_L1", "Reviewer (L1)"],
-  ["REVIEWER_L2", "Reviewer (L2)"],
+  ["EDITOR", "Editor"],
+  ["REVIEWER", "Reviewer"],
 ];
 
 export function RequestActions({ req }: { req: Req }) {
@@ -20,7 +19,7 @@ export function RequestActions({ req }: { req: Req }) {
   const [pending, setPending] = useState(false);
 
   // Approve form state
-  const [roles, setRoles] = useState<Set<string>>(new Set(["INVESTIGATOR"]));
+  const [roles, setRoles] = useState<Set<string>>(new Set(["EDITOR"]));
   const [scopeEntity, setScopeEntity] = useState("");
   const [scopeDept, setScopeDept] = useState("");
   const [note, setNote] = useState("");
@@ -130,7 +129,7 @@ export function RequestActions({ req }: { req: Req }) {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="label">Scope entity <span className="text-ink-300 font-normal">(optional)</span></label>
-                    <input className="input" value={scopeEntity} onChange={(e) => setScopeEntity(e.target.value)} placeholder="e.g. OCL" />
+                    <input className="input" value={scopeEntity} onChange={(e) => setScopeEntity(e.target.value)} placeholder="e.g. Post-production" />
                   </div>
                   <div>
                     <label className="label">Scope dept <span className="text-ink-300 font-normal">(optional)</span></label>

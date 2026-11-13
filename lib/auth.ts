@@ -94,7 +94,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   pages: { signIn: "/sign-in" },
   trustHost: true,
   providers: [
-    // Firebase Google sign-in — ported from the Case Management system.
+    // Firebase Google sign-in.
     // The browser signs in with Firebase and posts the Firebase ID token here;
     // we verify it server-side and mint the app's normal NextAuth session, so
     // the rest of the app (RBAC, `auth()`, sessions) is unchanged.

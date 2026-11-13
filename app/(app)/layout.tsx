@@ -21,24 +21,27 @@ type NavGroup = { group: string; items: NavItem[] };
 
 function buildNav(roles: string, pendingRequests: number): NavGroup[] {
   const roleSet = roles.split(",").map(r => r.trim());
-  const isReviewer = roleSet.includes("REVIEWER_L1") || roleSet.includes("REVIEWER_L2") || roleSet.includes("ADMIN");
+  const isReviewer = roleSet.includes("REVIEWER") || roleSet.includes("ADMIN");
   const nav: NavGroup[] = [
     {
       group: "Workspace",
       items: [
         { href: "/dashboard/overview", label: "Dashboard", icon: "home" },
-        { href: "/cases", label: "Cases", icon: "list" },
-        { href: "/cases/new", label: "New Case", icon: "plus" },
-        ...(isReviewer ? [{ href: "/reviews" as const, label: "Pending Reviews", icon: "check" as const }] : []),
+        { href: "/projects", label: "Projects", icon: "list" },
+        { href: "/projects/board", label: "Board", icon: "calendar" },
+        { href: "/projects/new", label: "New Project", icon: "plus" },
+        { href: "/tasks", label: "My Tasks", icon: "check" },
+        ...(isReviewer ? [{ href: "/reviews" as const, label: "Pending Reviews", icon: "bookmark" as const }] : []),
+        { href: "/clients", label: "Clients", icon: "briefcase" },
+        { href: "/team", label: "Team", icon: "users" },
         { href: "/how-it-works", label: "How it Works", icon: "help" as const },
-        { href: "/admin/employees", label: "Employee Master", icon: "briefcase" },
       ],
     },
     {
       group: "Reports",
       items: [
         { href: "/dashboard/workload", label: "Team Workload", icon: "users" },
-        { href: "/dashboard/compliance", label: "Compliance & SLA", icon: "clock" },
+        { href: "/dashboard/deadlines", label: "Deadlines", icon: "clock" },
         { href: "/dashboard/analytics", label: "Custom Analytics", icon: "chart" },
       ],
     },
@@ -51,11 +54,11 @@ function buildNav(roles: string, pendingRequests: number): NavGroup[] {
         { href: "/import", label: "Import Data", icon: "upload" },
         { href: "/admin/users", label: "Users", icon: "user" },
         { href: "/admin/requests", label: "Access Requests", icon: "user-plus", badge: pendingRequests },
-        { href: "/admin/lookups", label: "Categories", icon: "tags" },
+        { href: "/admin/lookups", label: "Project Types", icon: "tags" },
         { href: "/admin/audit", label: "Audit Log", icon: "history" },
       ],
     });
-  } else if (roleSet.includes("REVIEWER_L1") || roleSet.includes("REVIEWER_L2")) {
+  } else if (roleSet.includes("REVIEWER")) {
     nav.push({
       group: "Administration",
       items: [
@@ -85,12 +88,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {/* Logo */}
         <div className="px-5 py-5 border-b border-ink-100/60 dark:border-white/[0.04]">
           <Link href="/dashboard/overview" className="flex items-center gap-3 group">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-white grid place-items-center shadow-md group-hover:shadow-glow transition-shadow duration-300 overflow-hidden">
-              <Icon name="shield" className="h-5 w-5" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/hl-media-logo.svg" alt="HL Media" className="h-10 w-10 rounded-xl shadow-md group-hover:shadow-glow transition-shadow duration-300" />
             <div>
-              <div className="text-[15px] font-bold text-ink-900 dark:text-white leading-tight tracking-tight">Vigilance</div>
-              <div className="text-[11px] text-ink-400 dark:text-gray-500 font-medium tracking-wide">CASE MANAGEMENT</div>
+              <div className="text-[15px] font-bold text-ink-900 dark:text-white leading-tight tracking-tight">HL Media</div>
+              <div className="text-[11px] text-ink-400 dark:text-gray-500 font-medium tracking-wide">PROJECT STUDIO</div>
             </div>
           </Link>
         </div>
@@ -142,8 +144,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="sticky top-0 z-20 bg-canvas/80 dark:bg-[#0b0f1a]/80 backdrop-blur-lg border-b border-ink-100/60 dark:border-white/[0.04]">
           <div className="px-8 py-3 mx-auto w-full max-w-[1240px] flex items-center justify-end gap-4">
             <ThemeToggle theme={theme} />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/paytm-logo.svg" alt="Paytm" className="h-5 dark:brightness-0 dark:invert" />
           </div>
         </div>
         <div className="px-8 py-7 mx-auto w-full max-w-[1240px] animate-page">
